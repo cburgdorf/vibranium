@@ -423,11 +423,14 @@ mod config_cmd {
 #[cfg(test)]
 mod compile_cmd {
 
+  use std::fs;
   use std::process::Command;
+  use std::path::PathBuf;
   use assert_cmd::prelude::*;
   use predicates::prelude::*;
 
   use super::setup_vibranium_project;
+  use super::create_test_contract;
   use super::set_configuration;
   use super::set_configurations;
 
@@ -534,6 +537,36 @@ mod compile_cmd {
     // Failure is the expected behaviour here as we don't provide a valid 
     // compiler option
     cmd.assert().failure();
+    tmp_dir.close()?;
+    Ok(())
+  }
+
+  #[test]
+  fn it_should_transform_source_imports_when_using_solidity() -> Result<(), Box<std::error::Error>> {
+    let (tmp_dir, project_path) = setup_vibranium_project(None)?;
+    let node_modules_path = project_path.join("node_modules");
+
+    let import_path = PathBuf::from("@some-package").join("contracts").join("something.sol");
+    let absolute_path = node_modules_path.join(&import_path);
+
+    fs::create_dir_all(absolute_path.parent().unwrap())?;
+    fs::File::create(&absolute_path)?;
+
+    create_test_contract(&project_path, "test_contract_with_node_module_import.sol")?;
+
+    let mut cmd = Command::main_binary()?;
+    cmd.arg("compile")
+        .arg("--compiler")
+        .arg("solcjs")
+        .arg("--path")
+        .arg(&project_path);
+
+    // If this command succeeds we already know transformation has worked as the path used
+    // inside the test contract file doesn't exist otherwise.
+    cmd.assert().success();
+
+    assert_eq!(project_path.join(".vibranium").join("contracts").join(&absolute_path).exists(), true);
+
     tmp_dir.close()?;
     Ok(())
   }

@@ -1,11 +1,18 @@
 pub mod error;
 pub mod support;
+mod utils;
 
+use utils::INTERNAL_SOURCE_DIR;
 use std::process::{Child, Command, Stdio};
+use std::path::PathBuf;
+use std::fs;
+use std::io::Write;
+use std::collections::HashSet;
 use crate::config;
-use crate::utils;
+use crate::utils as lib_utils;
 use support::SupportedCompilers;
 use glob::glob;
+
 
 #[derive(Debug)]
 pub struct CompilerConfig {
@@ -24,6 +31,50 @@ impl<'a> Compiler<'a> {
     }
   }
 
+  pub fn normalize_imports(&self) -> Result<Vec<PathBuf>, error::CompilerError> {
+    let project_config = self.config.read()?;
+    let destination_root = self.config.vibranium_dir_path.join(INTERNAL_SOURCE_DIR);
+
+    if !destination_root.exists() {
+      fs::create_dir_all(&destination_root)?; 
+    }
+
+    let mut unread = project_config.sources.smart_contracts.iter()
+      .map(|pattern| self.config.project_path.join(&pattern))
+      .flat_map(|path| glob(&path.to_str().unwrap()).unwrap().filter_map(Result::ok))
+      .collect::<Vec<PathBuf>>();
+
+    let mut seen = unread.iter().cloned().collect::<HashSet<_>>();
+    let mut normalized_imports = HashSet::new();
+
+    while let Some(path) = unread.pop() {
+      if let Ok(mut contents) = fs::read_to_string(&path) {
+        let destination_path = utils::get_destination_path(&path, &self.config.project_path, &destination_root);
+        fs::create_dir_all(destination_path.parent().unwrap())?;
+
+        let imports = utils::extract_imports(&mut contents);
+        let mut normalized_file = fs::File::create(&destination_path)?;
+
+        info!("Normalizing imports for: {:?}", &path);
+        for import in imports {
+          let resolved_import = utils::resolve_import(&import, &path.parent().unwrap(), &self.config.project_path, &destination_root)?;
+
+          contents = contents.replace(&import, &resolved_import.2.to_str().unwrap());
+          if !seen.contains(&resolved_import.1) {
+            unread.push(resolved_import.1.clone());
+            seen.insert(resolved_import.1);
+          }
+        }
+        info!("Creating transformed source file: {:?}", &normalized_file);
+        normalized_file.write_all(contents.as_bytes())?;
+        if !normalized_imports.contains(&destination_path) {
+          normalized_imports.insert(destination_path);
+        }
+      }
+    }
+    Ok(normalized_imports.iter().cloned().collect::<Vec<PathBuf>>())
+  }
+
   pub fn compile(&self, config: CompilerConfig) -> Result<Child, error::CompilerError> {
     let project_config = self.config.read()?;
     let artifacts_dir = self.config.project_path.join(&project_config.sources.artifacts);
@@ -38,11 +89,11 @@ impl<'a> Compiler<'a> {
     let mut compiler_options = match &config.compiler_options {
       Some(options) => {
         match compiler.parse() {
-          Ok(SupportedCompilers::Solc) => utils::merge_cli_options(
+          Ok(SupportedCompilers::Solc) => lib_utils::merge_cli_options(
             support::default_options_from(SupportedCompilers::Solc),
             options.to_vec()
           ),
-          Ok(SupportedCompilers::SolcJs) => utils::merge_cli_options(
+          Ok(SupportedCompilers::SolcJs) => lib_utils::merge_cli_options(
             support::default_options_from(SupportedCompilers::SolcJs),
             options.to_vec()
           ),
@@ -65,14 +116,41 @@ impl<'a> Compiler<'a> {
 
     compiler_options.push(artifacts_dir.to_string_lossy().to_string());
 
-    for pattern in &project_config.sources.smart_contracts {
-      let mut full_pattern = self.config.project_path.clone();
-      full_pattern.push(&pattern);
-      for entry in glob(&full_pattern.to_str().unwrap()).unwrap().filter_map(Result::ok) {
-        compiler_options.push(entry.to_string_lossy().to_string());
+    let input_files = match compiler.parse() {
+      Ok(SupportedCompilers::Solc) => {
+        self.normalize_imports()?
+          .iter()
+          .map(|path| path.to_string_lossy().to_string())
+          .collect::<Vec<String>>()
+      },
+      Ok(SupportedCompilers::SolcJs) => {
+        self.normalize_imports()?
+          .iter()
+          .map(|path| path.to_string_lossy().to_string())
+          .collect::<Vec<String>>()
+      },
+      Err(_err) => {
+        let mut files = vec![];
+        for pattern in &project_config.sources.smart_contracts {
+          let pattern = PathBuf::from(&pattern);
+          let full_pattern = if pattern.starts_with(&self.config.project_path) {
+            pattern
+          } else {
+            self.config.project_path.join(&pattern)
+          };
+          files.extend(
+            glob(&full_pattern.to_str().unwrap())
+            .unwrap()
+            .filter_map(Result::ok)
+            .map(|path| path.to_string_lossy().to_string())
+            .collect::<Vec<String>>()
+          );
+        }
+        files
       }
-    }
+    };
 
+    compiler_options.extend(input_files);
     compiler_options.insert(0, compiler.to_string());
 
     let (shell, shell_opt) = if cfg!(target_os = "windows") {
@@ -105,3 +183,4 @@ fn try_default_options_from(compiler: &str) -> Vec<String> {
     Err(_err) => vec![],
   }
 }
+

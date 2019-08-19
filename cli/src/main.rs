@@ -367,7 +367,10 @@ fn run() -> Result<(), Error> {
 }
 
 fn pathbuf_from_or_current_dir(path: Option<&str>) -> Result<PathBuf, std::io::Error> {
-  path.map(|p| Ok(PathBuf::from(p))).unwrap_or_else(env::current_dir)
+  path
+    .map(|p| Ok(PathBuf::from(p)))
+    .unwrap_or_else(env::current_dir)
+    .and_then(|p| p.canonicalize())
 }
 
 fn is_multi_value_arg(value: &str) -> bool {
