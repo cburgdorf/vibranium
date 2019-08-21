@@ -14,7 +14,8 @@ use vibranium::config::ProjectConfig;
 
 fn setup_vibranium_project(config: Option<ProjectConfig>) -> Result<(TempDir, PathBuf), Box<std::error::Error>> {
   let tmp_dir = tempdir()?;
-  let project_path = tmp_dir.path().join("test_dapp");
+  let mut project_path = tmp_dir.path().join("test_dapp");
+  project_path = project_path.canonicalize().unwrap().to_path_buf();
   let _ = fs::create_dir(&project_path);
 
   let mut cmd = Command::main_binary()?;
@@ -84,17 +85,17 @@ mod init_cmd {
   use super::setup_vibranium_project;
   use super::read_config;
 
-  /* #[test] */
-  /* fn it_should_fail_on_init_if_project_path_doesnt_exist() -> Result<(), Box<std::error::Error>> { */
-  /*   let mut cmd = Command::main_binary()?; */
-  /*   cmd.arg("init") */
-  /*       .arg("--path") */
-  /*       .arg("/tmp/doesnt/exist"); */
-  /*   cmd.assert() */
-  /*       .failure() */
-  /*       .stderr(predicate::str::contains("Couldn't find directory for given project path")); */
-  /*   Ok(()) */
-  /* } */
+  #[test]
+  fn it_should_fail_on_init_if_project_path_doesnt_exist() -> Result<(), Box<std::error::Error>> {
+    let mut cmd = Command::main_binary()?;
+    cmd.arg("init")
+        .arg("--path")
+        .arg("/tmp/doesnt/exist");
+    cmd.assert()
+        .failure()
+        .stderr(predicate::str::contains("Couldn't find directory for given project path"));
+    Ok(())
+  }
 
   #[test]
   fn it_should_initialize_project() -> Result<(), Box<std::error::Error>> {

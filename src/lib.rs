@@ -23,6 +23,7 @@ use std::path::PathBuf;
 use std::collections::HashMap;
 use blockchain::connector as connector;
 use web3::types::Address;
+use project_generator::error::ProjectGenerationError;
 
 #[derive(Debug)]
 pub struct Vibranium {
@@ -31,11 +32,14 @@ pub struct Vibranium {
 }
 
 impl Vibranium {
-  pub fn new(project_path: PathBuf) -> Vibranium {
-    Vibranium {
+  pub fn new(project_path: PathBuf) -> Result<Vibranium, ProjectGenerationError> {
+    let project_path = project_path
+                        .canonicalize()
+                        .map_err(|_err| ProjectGenerationError::ProjectPathNotFound)?;
+    Ok(Vibranium {
       config: config::Config::new(project_path.clone()),
       project_path
-    }
+    })
   }
 
   pub fn start_node(&self, config: blockchain::NodeConfig) -> Result<ExitStatus, blockchain::error::NodeError> {
