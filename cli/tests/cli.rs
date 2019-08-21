@@ -84,17 +84,17 @@ mod init_cmd {
   use super::setup_vibranium_project;
   use super::read_config;
 
-  #[test]
-  fn it_should_fail_on_init_if_project_path_doesnt_exist() -> Result<(), Box<std::error::Error>> {
-    let mut cmd = Command::main_binary()?;
-    cmd.arg("init")
-        .arg("--path")
-        .arg("/tmp/doesnt/exist");
-    cmd.assert()
-        .failure()
-        .stderr(predicate::str::contains("Couldn't find directory for given project path"));
-    Ok(())
-  }
+  /* #[test] */
+  /* fn it_should_fail_on_init_if_project_path_doesnt_exist() -> Result<(), Box<std::error::Error>> { */
+  /*   let mut cmd = Command::main_binary()?; */
+  /*   cmd.arg("init") */
+  /*       .arg("--path") */
+  /*       .arg("/tmp/doesnt/exist"); */
+  /*   cmd.assert() */
+  /*       .failure() */
+  /*       .stderr(predicate::str::contains("Couldn't find directory for given project path")); */
+  /*   Ok(()) */
+  /* } */
 
   #[test]
   fn it_should_initialize_project() -> Result<(), Box<std::error::Error>> {
