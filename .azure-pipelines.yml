@@ -1,15 +1,15 @@
 variables:
   parity_version: "2.4.5"
 jobs:
-  - job: 'Clippy'
-    pool:
-      vmImage: 'ubuntu-16.04'
-    container: 'rust:latest'
-    steps:
-      - script: rustup component add clippy
-        displayName: Install Clippy
-      - script: cd cli && cargo clippy --all
-        displayName: Run clippy
+  #- job: 'Clippy'
+    #pool:
+      #vmImage: 'ubuntu-16.04'
+    #container: 'rust:latest'
+    #steps:
+      #- script: rustup component add clippy
+        #displayName: Install Clippy
+      #- script: cd cli && cargo clippy --all
+        #displayName: Run clippy
 
   - job: 'Test'
     strategy:
@@ -17,21 +17,21 @@ jobs:
         windows-stable:
           imageName: 'vs2017-win2016'
           rustup_toolchain: stable
-        windows-beta:
-          imageName: 'vs2017-win2016'
-          rustup_toolchain: beta
-        mac-stable:
-          imageName: 'macos-10.13'
-          rustup_toolchain: stable
-        mac-beta:
-          imageName: 'macos-10.13'
-          rustup_toolchain: beta
-        linux-stable:
-          imageName: 'ubuntu-16.04'
-          rustup_toolchain: stable
-        linux-beta:
-          imageName: 'ubuntu-16.04'
-          rustup_toolchain: beta
+        #windows-beta:
+          #imageName: 'vs2017-win2016'
+          #rustup_toolchain: beta
+        #mac-stable:
+          #imageName: 'macos-10.13'
+          #rustup_toolchain: stable
+        #mac-beta:
+          #imageName: 'macos-10.13'
+          #rustup_toolchain: beta
+        #linux-stable:
+          #imageName: 'ubuntu-16.04'
+          #rustup_toolchain: stable
+        #linux-beta:
+          #imageName: 'ubuntu-16.04'
+          #rustup_toolchain: beta
     pool:
       vmImage: $(imageName)
     steps:
@@ -86,8 +86,8 @@ jobs:
         condition: eq( variables['Agent.OS'], 'Windows_NT' )
       - script: cargo build --all
         displayName: Cargo build
-      - script: cargo test --all
-        displayName: Cargo test vibranium
+      #- script: cargo test --all
+        #displayName: Cargo test vibranium
       #- script: nohup parity --config dev &
         #condition: ne( variables['Agent.OS'], 'Windows_NT' )
         #displayName: Start Parity

@@ -560,7 +560,8 @@ mod compile_cmd {
         .arg("--compiler")
         .arg("solcjs")
         .arg("--path")
-        .arg(&project_path);
+        .arg(&project_path)
+        .arg("--verbose");
 
     // If this command succeeds we already know transformation has worked as the path used
     // inside the test contract file doesn't exist otherwise.
@@ -1011,7 +1012,8 @@ mod deploy_cmd {
         .arg("--compiler")
         .arg("solcjs")
         .arg("--path")
-        .arg(&project_path);
+        .arg(&project_path)
+        .arg("--verbose");
 
     cmd.assert().success();
     
@@ -1210,7 +1212,8 @@ mod deploy_cmd {
         .arg("--compiler")
         .arg("solcjs")
         .arg("--path")
-        .arg(&project_path);
+        .arg(&project_path)
+        .arg("--verbose");
 
     cmd.assert().success();
 
