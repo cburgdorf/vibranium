@@ -105,5 +105,5 @@ jobs:
       - bash: |
           #export PATH="$(cd ../Downloads && pwd):${PATH}"
           #export PATH="$(cd ../Downloads/solidity-windows && pwd):${PATH}"
-          cd cli && cargo test --all
+          cd cli && cargo test --all -- --nocapture
         displayName: Cargo test vibranium-cli

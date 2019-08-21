@@ -429,6 +429,7 @@ mod compile_cmd {
   use std::path::PathBuf;
   use assert_cmd::prelude::*;
   use predicates::prelude::*;
+  use vibranium::config::ProjectConfig;
 
   use super::setup_vibranium_project;
   use super::create_test_contract;
@@ -544,7 +545,15 @@ mod compile_cmd {
 
   #[test]
   fn it_should_transform_source_imports_when_using_solidity() -> Result<(), Box<std::error::Error>> {
-    let (tmp_dir, project_path) = setup_vibranium_project(None)?;
+    let mut config = ProjectConfig::default();
+    let pattern = if cfg!(target_os = "windows") {
+      r#"contracts\*.sol"#
+    } else {
+      "contracts/*.sol"
+    };
+    config.sources.smart_contracts = vec![pattern.to_string()];
+
+    let (tmp_dir, project_path) = setup_vibranium_project(Some(config))?;
     let node_modules_path = project_path.join("node_modules");
 
     let import_path = PathBuf::from("@some-package").join("contracts").join("something.sol");
@@ -970,6 +979,12 @@ mod deploy_cmd {
     let contract_name = "SimpleTestContract";
     let contract_name_2 = "SimpleTestContract2";
 
+    let pattern = if cfg!(target_os = "windows") {
+      r#"contracts\*.sol"#
+    } else {
+      "contracts/*.sol"
+    };
+    config.sources.smart_contracts = vec![pattern.to_string()];
     config.deployment = Some(ProjectDeploymentConfig {
       gas_limit: None,
       gas_price: None,
@@ -1179,6 +1194,13 @@ mod deploy_cmd {
     let mut config = ProjectConfig::default();
     let contract_name = "SimpleTestContract";
 
+    let pattern = if cfg!(target_os = "windows") {
+      r#"contracts\*.sol"#
+    } else {
+      "contracts/*.sol"
+    };
+
+    config.sources.smart_contracts = vec![pattern.to_string()];
     config.deployment = Some(ProjectDeploymentConfig {
       gas_limit: None,
       gas_price: None,
