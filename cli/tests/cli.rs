@@ -15,7 +15,6 @@ use vibranium::config::ProjectConfig;
 fn setup_vibranium_project(config: Option<ProjectConfig>) -> Result<(TempDir, PathBuf), Box<std::error::Error>> {
   let tmp_dir = tempdir()?;
   let mut project_path = tmp_dir.path().join("test_dapp");
-  project_path = project_path.canonicalize().unwrap().to_path_buf();
   let _ = fs::create_dir(&project_path);
 
   let mut cmd = Command::main_binary()?;
@@ -33,6 +32,7 @@ fn setup_vibranium_project(config: Option<ProjectConfig>) -> Result<(TempDir, Pa
     config_file.write_all(config_toml.as_bytes()).unwrap();
   }
 
+  project_path = project_path.canonicalize().unwrap().to_path_buf();
   Ok((tmp_dir, project_path))
 }
 
