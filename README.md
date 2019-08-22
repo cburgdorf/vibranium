@@ -6,7 +6,7 @@
 
 This project is highly inspired by tools like [Embark](https://embark.status.im) and [Truffle](https://truffleframework.com) and serves as my personal playground to learn the Rust programming language but also create something useful.
 
-**Super early stages, far from production ready**
+**Super early stages, far from production ready**TEST
 
 ```
 USAGE:
