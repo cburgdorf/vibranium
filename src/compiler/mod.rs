@@ -40,7 +40,11 @@ impl<'a> Compiler<'a> {
     }
 
     let mut unread = project_config.sources.smart_contracts.iter()
-      .map(|pattern| self.config.project_path.join(&pattern))
+      .map(|pattern| {
+        let p = self.config.project_path.join(&pattern);
+        info!("Attempting to glob: {:?}", &p);
+        p
+      })
       .flat_map(|path| glob(&path.to_str().unwrap()).unwrap().filter_map(Result::ok))
       .collect::<Vec<PathBuf>>();
 
